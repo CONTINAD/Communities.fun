@@ -5,10 +5,19 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 
+function XIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
+
 export default function SignInPage() {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [xLoading, setXLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -32,6 +41,11 @@ export default function SignInPage() {
     }
   }
 
+  async function handleXSignIn() {
+    setXLoading(true);
+    await signIn("twitter", { callbackUrl: "/home" });
+  }
+
   return (
     <div className="space-y-8">
       <div className="text-center">
@@ -39,6 +53,23 @@ export default function SignInPage() {
           Communities<span className="text-accent">.fun</span>
         </h1>
         <p className="text-text-secondary mt-2">Sign in to your account</p>
+      </div>
+
+      {/* Sign in with X */}
+      <button
+        onClick={handleXSignIn}
+        disabled={xLoading}
+        className="w-full flex items-center justify-center gap-3 py-3 rounded-full bg-text-primary text-bg-primary font-bold text-base hover:bg-text-primary/90 disabled:opacity-50 transition-colors"
+      >
+        <XIcon />
+        {xLoading ? "Connecting..." : "Sign in with X"}
+      </button>
+
+      {/* Divider */}
+      <div className="flex items-center gap-4">
+        <div className="flex-1 h-px bg-border-primary" />
+        <span className="text-text-secondary text-sm">or</span>
+        <div className="flex-1 h-px bg-border-primary" />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -71,9 +102,9 @@ export default function SignInPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 rounded-full bg-text-primary text-bg-primary font-bold text-base hover:bg-text-primary/90 disabled:opacity-50 transition-colors"
+          className="w-full py-3 rounded-full border border-border-primary text-text-primary font-bold text-base hover:bg-bg-tertiary disabled:opacity-50 transition-colors"
         >
-          {loading ? "Signing in..." : "Sign in"}
+          {loading ? "Signing in..." : "Sign in with email"}
         </button>
       </form>
 
