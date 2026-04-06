@@ -80,7 +80,7 @@ export const authOptions: NextAuthOptions = {
           // Build update data
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const updateData: Record<string, any> = {};
-          const xUser = user as Record<string, unknown>;
+          const xUser = user as unknown as Record<string, unknown>;
 
           // Set username from X handle if current username is auto-generated cuid
           const isDefaultUsername = /^c[a-z0-9]{24}$/.test(dbUser.username);
