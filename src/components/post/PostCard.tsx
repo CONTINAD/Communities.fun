@@ -49,7 +49,7 @@ export default function PostCard({ post, currentUserId }: PostCardProps) {
     ? post.repostOf.author
     : post.author;
 
-  const authorAvatar = authorAvatar || displayAuthor.image;
+  const authorAvatar = displayAuthor.avatar || displayAuthor.image;
   const isAuthor = currentUserId === post.authorId;
   const isLiked = post.likes.some((like) => like.userId === currentUserId);
 
