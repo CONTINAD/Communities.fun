@@ -7,6 +7,7 @@ import { formatCount } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 import UserAvatar from "./UserAvatar";
 import ProfileEditForm from "./ProfileEditForm";
+import FollowButton from "./FollowButton";
 
 interface ProfileUser {
   id: string;
@@ -24,6 +25,10 @@ interface ProfileHeaderProps {
   postCount: number;
   communityCount: number;
   isOwnProfile: boolean;
+  followerCount?: number;
+  followingCount?: number;
+  isFollowing?: boolean;
+  showFollowButton?: boolean;
 }
 
 export default function ProfileHeader({
@@ -31,6 +36,10 @@ export default function ProfileHeader({
   postCount,
   communityCount,
   isOwnProfile,
+  followerCount = 0,
+  followingCount = 0,
+  isFollowing = false,
+  showFollowButton = false,
 }: ProfileHeaderProps) {
   const [showEditModal, setShowEditModal] = useState(false);
 
@@ -67,8 +76,8 @@ export default function ProfileHeader({
             />
           </div>
 
-          {isOwnProfile && (
-            <div className="mt-3">
+          <div className="mt-3">
+            {isOwnProfile ? (
               <Button
                 variant="secondary"
                 size="sm"
@@ -76,8 +85,14 @@ export default function ProfileHeader({
               >
                 Edit profile
               </Button>
-            </div>
-          )}
+            ) : showFollowButton ? (
+              <FollowButton
+                targetUserId={user.id}
+                isFollowing={isFollowing}
+                followerCount={followerCount}
+              />
+            ) : null}
+          </div>
         </div>
 
         {/* User info */}
@@ -106,6 +121,18 @@ export default function ProfileHeader({
           </div>
 
           <div className="mt-3 flex gap-4 text-sm">
+            <span className="text-text-secondary">
+              <span className="font-bold text-text-primary">
+                {formatCount(followingCount)}
+              </span>{" "}
+              Following
+            </span>
+            <span className="text-text-secondary">
+              <span className="font-bold text-text-primary">
+                {formatCount(followerCount)}
+              </span>{" "}
+              {followerCount === 1 ? "Follower" : "Followers"}
+            </span>
             <span className="text-text-secondary">
               <span className="font-bold text-text-primary">
                 {formatCount(postCount)}

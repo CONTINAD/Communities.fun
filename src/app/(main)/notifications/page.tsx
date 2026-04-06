@@ -1,23 +1,63 @@
 import Link from "next/link";
+import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
 import { formatDate } from "@/lib/utils";
 import { Heart, MessageCircle, UserPlus, Repeat2, Bell } from "lucide-react";
 import MarkAllReadButton from "./MarkAllReadButton";
+import { markRead } from "@/actions/notification";
 
 const typeIcons: Record<string, typeof Heart> = {
   like: Heart,
   reply: MessageCircle,
   member_join: UserPlus,
+  follow: UserPlus,
   repost: Repeat2,
 };
 
-const typeColors: Record<string, string> = {
-  like: "text-danger",
-  reply: "text-accent",
-  member_join: "text-green-500",
-  repost: "text-green-500",
+const typeBadgeColors: Record<string, string> = {
+  like: "bg-pink-500",
+  reply: "bg-blue-500",
+  member_join: "bg-green-500",
+  follow: "bg-blue-500",
+  repost: "bg-green-500",
 };
+
+function ActorAvatar({
+  avatar,
+  name,
+  type,
+}: {
+  avatar: string | null;
+  name: string | null;
+  type: string;
+}) {
+  const Icon = typeIcons[type] || Bell;
+  const badgeColor = typeBadgeColors[type] || "bg-gray-500";
+
+  return (
+    <div className="relative flex-shrink-0">
+      {avatar ? (
+        <Image
+          src={avatar}
+          alt={name || ""}
+          width={40}
+          height={40}
+          className="w-10 h-10 rounded-full object-cover"
+        />
+      ) : (
+        <div className="w-10 h-10 rounded-full bg-bg-tertiary flex items-center justify-center text-text-secondary font-bold text-sm">
+          {(name || "?")[0]?.toUpperCase()}
+        </div>
+      )}
+      <div
+        className={`absolute -bottom-0.5 -right-0.5 w-[18px] h-[18px] rounded-full ${badgeColor} flex items-center justify-center ring-2 ring-bg-primary`}
+      >
+        <Icon size={10} className="text-white" />
+      </div>
+    </div>
+  );
+}
 
 export default async function NotificationsPage() {
   const user = await requireAuth();
@@ -25,7 +65,7 @@ export default async function NotificationsPage() {
   const notifications = await prisma.notification.findMany({
     where: { userId: user.id },
     orderBy: { createdAt: "desc" },
-    take: 30,
+    take: 50,
   });
 
   const hasUnread = notifications.some((n) => !n.read);
@@ -44,49 +84,79 @@ export default async function NotificationsPage() {
             No notifications yet
           </h3>
           <p className="text-text-secondary text-[15px] text-center max-w-sm">
-            When someone interacts with your posts or communities, you&apos;ll see it here.
+            When someone interacts with your posts or communities, you&apos;ll
+            see it here.
           </p>
         </div>
       ) : (
         <div>
           {notifications.map((notif) => {
-            const Icon = typeIcons[notif.type] || Bell;
-            const iconColor = typeColors[notif.type] || "text-text-secondary";
+            const actorName = notif.actorName || null;
+            const actorAvatar = notif.actorAvatar || null;
 
-            const content = (
+            // Parse message to bold the actor name
+            let messageContent;
+            if (actorName && notif.message.startsWith(actorName)) {
+              const rest = notif.message.slice(actorName.length);
+              messageContent = (
+                <span className="text-[15px] leading-snug">
+                  <span className="font-bold text-text-primary">
+                    {actorName}
+                  </span>
+                  <span className="text-text-secondary">{rest}</span>
+                </span>
+              );
+            } else {
+              messageContent = (
+                <span className="text-text-primary text-[15px] leading-snug">
+                  {notif.message}
+                </span>
+              );
+            }
+
+            const inner = (
               <div
-                className={`flex items-start gap-3 px-4 py-3 border-b border-border-primary transition-colors hover:bg-bg-tertiary ${
-                  !notif.read ? "bg-bg-secondary" : ""
+                className={`flex items-center gap-3 px-4 py-3 border-b border-border-primary transition-colors hover:bg-bg-tertiary ${
+                  !notif.read
+                    ? "bg-accent/5 border-l-2 border-l-accent"
+                    : "border-l-2 border-l-transparent"
                 }`}
               >
-                <div className={`mt-0.5 flex-shrink-0 ${iconColor}`}>
-                  <Icon size={20} />
-                </div>
+                <ActorAvatar
+                  avatar={actorAvatar}
+                  name={actorName}
+                  type={notif.type}
+                />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-text-primary text-[15px] leading-snug">
-                      {notif.message}
-                    </p>
-                    {!notif.read && (
-                      <span className="mt-1.5 flex-shrink-0 w-2 h-2 rounded-full bg-accent" />
-                    )}
-                  </div>
-                  <p className="text-text-secondary text-[13px] mt-0.5">
-                    {formatDate(notif.createdAt)}
-                  </p>
+                  {messageContent}
                 </div>
+                <span className="text-text-secondary text-[13px] flex-shrink-0">
+                  {formatDate(notif.createdAt)}
+                </span>
               </div>
             );
 
             if (notif.link) {
               return (
-                <Link key={notif.id} href={notif.link} className="block">
-                  {content}
-                </Link>
+                <form
+                  key={notif.id}
+                  action={async () => {
+                    "use server";
+                    if (!notif.read) {
+                      await markRead(notif.id);
+                    }
+                  }}
+                >
+                  <Link href={notif.link} className="block">
+                    <button type="submit" className="w-full text-left">
+                      {inner}
+                    </button>
+                  </Link>
+                </form>
               );
             }
 
-            return <div key={notif.id}>{content}</div>;
+            return <div key={notif.id}>{inner}</div>;
           })}
         </div>
       )}

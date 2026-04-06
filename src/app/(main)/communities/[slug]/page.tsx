@@ -50,7 +50,7 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
       communityId: community.id,
       parentId: null,
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
     include: {
       author: {
         select: { id: true, name: true, username: true, avatar: true, image: true },
@@ -62,6 +62,10 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
         select: { likes: true, replies: true, reposts: true },
       },
       likes: {
+        where: currentUser ? { userId: currentUser.id } : { userId: "" },
+        select: { userId: true },
+      },
+      bookmarks: {
         where: currentUser ? { userId: currentUser.id } : { userId: "" },
         select: { userId: true },
       },
@@ -80,7 +84,7 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
         />
       )}
 
-      <InfiniteFeed initialPosts={posts} currentUserId={currentUser?.id} type="community" communityId={community.id} />
+      <InfiniteFeed initialPosts={posts} currentUserId={currentUser?.id} type="community" communityId={community.id} isAdmin={isAdmin} />
     </div>
   );
 }

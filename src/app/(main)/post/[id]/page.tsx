@@ -31,6 +31,10 @@ export default async function PostPage({ params }: PostPageProps) {
         where: currentUser ? { userId: currentUser.id } : { userId: "" },
         select: { userId: true },
       },
+      bookmarks: {
+        where: currentUser ? { userId: currentUser.id } : { userId: "" },
+        select: { userId: true },
+      },
     },
   });
 
@@ -52,6 +56,10 @@ export default async function PostPage({ params }: PostPageProps) {
         select: { likes: true, replies: true, reposts: true },
       },
       likes: {
+        where: currentUser ? { userId: currentUser.id } : { userId: "" },
+        select: { userId: true },
+      },
+      bookmarks: {
         where: currentUser ? { userId: currentUser.id } : { userId: "" },
         select: { userId: true },
       },

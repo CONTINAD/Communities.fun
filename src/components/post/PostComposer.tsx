@@ -96,13 +96,12 @@ export default function PostComposer({
       if (result.success) {
         if (shareToX && result.postId) {
           const postUrl = `https://communitiesfun.netlify.app/post/${result.postId}`;
-          const tweetText = encodeURIComponent(content.trim());
-          const tweetUrl = encodeURIComponent(postUrl);
-          window.open(
-            `https://twitter.com/intent/tweet?text=${tweetText}&url=${tweetUrl}`,
-            "_blank",
-            "noopener,noreferrer"
-          );
+          const tweetText = `${content.trim()}\n\n${postUrl}`;
+          fetch("/api/tweet", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: tweetText }),
+          }).catch(() => {}); // Fire and forget
         }
         setContent("");
         setImagePreview(null);

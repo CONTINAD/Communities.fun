@@ -9,6 +9,7 @@ export type PostWithDetails = Post & {
     reposts: number;
   };
   likes: Pick<Like, "userId">[];
+  bookmarks?: { userId: string }[];
   repostOf?: (Post & {
     author: Pick<User, "id" | "name" | "username" | "avatar" | "image">;
   }) | null;

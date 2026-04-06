@@ -9,17 +9,21 @@ import {
   Share,
   MoreHorizontal,
   Trash2,
+  Pin,
 } from "lucide-react";
 import { deletePost } from "@/actions/post";
+import { togglePinPost } from "@/actions/pin";
 import { PostWithDetails } from "@/types";
 import LikeButton from "./LikeButton";
 import RepostButton from "./RepostButton";
+import BookmarkButton from "./BookmarkButton";
 
 interface PostCardProps {
   post: PostWithDetails;
   currentUserId?: string;
   /** Hide the community badge (e.g. when viewing a community feed) */
   hideCommunity?: boolean;
+  isAdmin?: boolean;
 }
 
 function timeAgo(date: Date): string {
@@ -39,10 +43,11 @@ function timeAgo(date: Date): string {
   });
 }
 
-export default function PostCard({ post, currentUserId, hideCommunity = false }: PostCardProps) {
+export default function PostCard({ post, currentUserId, hideCommunity = false, isAdmin = false }: PostCardProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isPinned, setIsPinned] = useState(post.pinned ?? false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isRepost = !!post.repostOf;
@@ -54,6 +59,7 @@ export default function PostCard({ post, currentUserId, hideCommunity = false }:
   const authorAvatar = displayAuthor.avatar || displayAuthor.image;
   const isAuthor = currentUserId === post.authorId;
   const isLiked = post.likes.some((like) => like.userId === currentUserId);
+  const isBookmarked = post.bookmarks?.some((b) => b.userId === currentUserId) ?? false;
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -94,6 +100,15 @@ export default function PostCard({ post, currentUserId, hideCommunity = false }:
     }
   }
 
+  async function handlePin(e: React.MouseEvent) {
+    e.stopPropagation();
+    setMenuOpen(false);
+    const result = await togglePinPost(post.id);
+    if ("pinned" in result) {
+      setIsPinned(!!result.pinned);
+    }
+  }
+
   return (
     <article
       onClick={handleCardClick}
@@ -101,6 +116,14 @@ export default function PostCard({ post, currentUserId, hideCommunity = false }:
         isDeleting ? "opacity-50 pointer-events-none" : ""
       }`}
     >
+      {/* Pinned header */}
+      {isPinned && (
+        <div className="flex items-center gap-2 ml-6 mb-1 text-text-secondary text-[13px]">
+          <Pin size={14} />
+          <span className="font-bold">Pinned</span>
+        </div>
+      )}
+
       {/* Repost header */}
       {isRepost && (
         <div className="flex items-center gap-2 ml-6 mb-1 text-text-secondary text-[13px]">
@@ -160,7 +183,7 @@ export default function PostCard({ post, currentUserId, hideCommunity = false }:
             </div>
 
             {/* More menu */}
-            {isAuthor && (
+            {(isAuthor || isAdmin) && (
               <div ref={menuRef} className="relative">
                 <button
                   onClick={(e) => {
@@ -174,13 +197,24 @@ export default function PostCard({ post, currentUserId, hideCommunity = false }:
 
                 {menuOpen && (
                   <div className="absolute right-0 top-full mt-1 z-50 bg-bg-primary border border-border-primary rounded-xl shadow-lg overflow-hidden min-w-[200px]">
-                    <button
-                      onClick={handleDelete}
-                      className="flex items-center gap-3 w-full px-4 py-3 text-danger hover:bg-bg-secondary transition-colors text-[15px] font-bold"
-                    >
-                      <Trash2 size={18} />
-                      Delete
-                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={handlePin}
+                        className="flex items-center gap-3 w-full px-4 py-3 text-text-primary hover:bg-bg-secondary transition-colors text-[15px] font-bold"
+                      >
+                        <Pin size={18} />
+                        {isPinned ? "Unpin post" : "Pin post"}
+                      </button>
+                    )}
+                    {isAuthor && (
+                      <button
+                        onClick={handleDelete}
+                        className="flex items-center gap-3 w-full px-4 py-3 text-danger hover:bg-bg-secondary transition-colors text-[15px] font-bold"
+                      >
+                        <Trash2 size={18} />
+                        Delete
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -267,6 +301,12 @@ export default function PostCard({ post, currentUserId, hideCommunity = false }:
                 <Share size={18} />
               </div>
             </button>
+
+            {/* Bookmark */}
+            <BookmarkButton
+              postId={post.id}
+              initialBookmarked={isBookmarked}
+            />
           </div>
         </div>
       </div>

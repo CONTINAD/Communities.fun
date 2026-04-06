@@ -11,6 +11,7 @@ import {
   Users,
   User,
   Bell,
+  Bookmark,
   Plus,
   LogOut,
   MoreHorizontal,
@@ -130,6 +131,22 @@ export default function Sidebar() {
               )}
             </div>
             <span className="hidden xl:inline">Notifications</span>
+          </Link>
+
+          {/* Bookmarks link */}
+          <Link
+            href="/bookmarks"
+            className={`flex items-center gap-5 py-3 px-4 rounded-full transition-colors text-xl hover:bg-bg-tertiary xl:justify-start justify-center ${
+              pathname.startsWith("/bookmarks")
+                ? "font-bold text-text-primary"
+                : "text-text-primary font-normal"
+            }`}
+          >
+            <Bookmark
+              size={26}
+              strokeWidth={pathname.startsWith("/bookmarks") ? 2.5 : 1.75}
+            />
+            <span className="hidden xl:inline">Bookmarks</span>
           </Link>
 
           {/* Profile link */}

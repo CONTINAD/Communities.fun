@@ -46,9 +46,18 @@ export async function createNotification(
   userId: string,
   type: string,
   message: string,
-  link?: string
+  link?: string,
+  actor?: { id: string; name?: string | null; avatar?: string | null }
 ) {
   await prisma.notification.create({
-    data: { userId, type, message, link },
+    data: {
+      userId,
+      type,
+      message,
+      link,
+      actorId: actor?.id,
+      actorName: actor?.name || null,
+      actorAvatar: actor?.avatar || null,
+    },
   });
 }

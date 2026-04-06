@@ -129,7 +129,8 @@ export async function joinCommunity(communityId: string) {
       community.creatorId,
       "member_join",
       `${user.name || user.username} joined ${community.name}`,
-      `/communities/${community.slug}`
+      `/communities/${community.slug}`,
+      { id: user.id, name: user.name || user.username, avatar: user.avatar || user.image }
     );
   }
 

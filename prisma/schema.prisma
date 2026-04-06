@@ -27,8 +27,12 @@ model User {
   memberships   CommunityMember[]
   posts         Post[]
   likes         Like[]
+  bookmarks     Bookmark[]
   createdCommunities Community[] @relation("CommunityCreator")
   notifications      Notification[]
+  actorNotifications Notification[] @relation("NotificationActor")
+  followers          Follow[]       @relation("UserFollowing")
+  following          Follow[]       @relation("UserFollowers")
 }
 
 model Account {
@@ -138,6 +142,8 @@ model Post {
   repostOf  Post?     @relation("PostReposts", fields: [repostOfId], references: [id])
   reposts   Post[]    @relation("PostReposts")
   likes     Like[]
+  bookmarks Bookmark[]
+  pinned    Boolean  @default(false)
 
   @@index([communityId, createdAt])
   @@index([authorId])
@@ -158,16 +164,47 @@ model Like {
 }
 
 model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  type      String
-  message   String
-  link      String?
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  userId      String
+  type        String
+  message     String
+  link        String?
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  actorId     String?
+  actorName   String?
+  actorAvatar String?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actor User? @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([userId, read])
   @@index([userId, createdAt])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
 }

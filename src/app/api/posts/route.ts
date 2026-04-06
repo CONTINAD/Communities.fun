@@ -56,6 +56,10 @@ export async function GET(request: NextRequest) {
         where: { userId },
         select: { userId: true },
       },
+      bookmarks: {
+        where: { userId },
+        select: { userId: true },
+      },
     },
   });
 

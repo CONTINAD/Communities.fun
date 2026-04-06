@@ -101,7 +101,8 @@ export async function likePost(postId: string) {
         post.authorId,
         "like",
         `${user.name || user.username} liked your post`,
-        `/post/${postId}`
+        `/post/${postId}`,
+        { id: user.id, name: user.name || user.username, avatar: user.avatar || user.image }
       );
     }
   }
@@ -150,7 +151,8 @@ export async function createReply(formData: FormData) {
       parent.authorId,
       "reply",
       `${user.name || user.username} replied to your post`,
-      `/post/${parentId}`
+      `/post/${parentId}`,
+      { id: user.id, name: user.name || user.username, avatar: user.avatar || user.image }
     );
   }
 
@@ -198,7 +200,8 @@ export async function repost(postId: string, communityId: string) {
       originalPost.authorId,
       "repost",
       `${user.name || user.username} reposted your post`,
-      `/post/${postId}`
+      `/post/${postId}`,
+      { id: user.id, name: user.name || user.username, avatar: user.avatar || user.image }
     );
   }
 

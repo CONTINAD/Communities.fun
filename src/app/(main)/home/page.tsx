@@ -59,6 +59,10 @@ export default async function HomePage() {
         where: { userId: user.id },
         select: { userId: true },
       },
+      bookmarks: {
+        where: { userId: user.id },
+        select: { userId: true },
+      },
     },
   }) as PostWithDetails[];
 

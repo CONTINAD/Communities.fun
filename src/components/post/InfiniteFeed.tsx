@@ -11,6 +11,7 @@ interface InfiniteFeedProps {
   type: "home" | "community" | "profile";
   communityId?: string;
   authorId?: string;
+  isAdmin?: boolean;
 }
 
 export default function InfiniteFeed({
@@ -19,6 +20,7 @@ export default function InfiniteFeed({
   type,
   communityId,
   authorId,
+  isAdmin,
 }: InfiniteFeedProps) {
   const [posts, setPosts] = useState<PostWithDetails[]>(initialPosts);
   const [cursor, setCursor] = useState<string | null>(
@@ -72,7 +74,7 @@ export default function InfiniteFeed({
   return (
     <div>
       {posts.map((post) => (
-        <PostCard key={post.id} post={post} currentUserId={currentUserId} hideCommunity={type === "community"} />
+        <PostCard key={post.id} post={post} currentUserId={currentUserId} hideCommunity={type === "community"} isAdmin={isAdmin} />
       ))}
 
       {hasMore && (

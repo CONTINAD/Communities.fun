@@ -32,10 +32,19 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const currentUser = await getCurrentUser();
   const isOwnProfile = currentUser?.id === profileUser.id;
 
-  const [postCount, communityCount] = await Promise.all([
+  const [postCount, communityCount, followerCount, followingCount, existingFollow] = await Promise.all([
     prisma.post.count({ where: { authorId: profileUser.id, parentId: null } }),
     prisma.communityMember.count({ where: { userId: profileUser.id } }),
+    prisma.follow.count({ where: { followingId: profileUser.id } }),
+    prisma.follow.count({ where: { followerId: profileUser.id } }),
+    currentUser
+      ? prisma.follow.findUnique({
+          where: { followerId_followingId: { followerId: currentUser.id, followingId: profileUser.id } },
+        })
+      : null,
   ]);
+
+  const isFollowing = !!existingFollow;
 
   const posts = await prisma.post.findMany({
     where: { authorId: profileUser.id, parentId: null },
@@ -51,6 +60,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         select: { likes: true, replies: true, reposts: true },
       },
       likes: {
+        where: currentUser ? { userId: currentUser.id } : { userId: "" },
+        select: { userId: true },
+      },
+      bookmarks: {
         where: currentUser ? { userId: currentUser.id } : { userId: "" },
         select: { userId: true },
       },
@@ -80,6 +93,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         postCount={postCount}
         communityCount={communityCount}
         isOwnProfile={isOwnProfile}
+        followerCount={followerCount}
+        followingCount={followingCount}
+        isFollowing={isFollowing}
+        showFollowButton={!isOwnProfile && !!currentUser}
       />
 
       <InfiniteFeed initialPosts={posts} currentUserId={currentUser?.id} type="profile" authorId={profileUser.id} />
