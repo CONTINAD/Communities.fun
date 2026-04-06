@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import ProfileHeader from "@/components/profile/ProfileHeader";
-import PostFeed from "@/components/post/PostFeed";
+import InfiniteFeed from "@/components/post/InfiniteFeed";
 import { PostWithDetails } from "@/types";
 
 interface ProfilePageProps {
@@ -82,7 +82,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         isOwnProfile={isOwnProfile}
       />
 
-      <PostFeed posts={posts} currentUserId={currentUser?.id} />
+      <InfiniteFeed initialPosts={posts} currentUserId={currentUser?.id} type="profile" authorId={profileUser.id} />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import {
   Compass,
   Users,
   User,
+  Bell,
   Plus,
   LogOut,
   MoreHorizontal,
@@ -28,6 +29,7 @@ export default function Sidebar() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const [unreadCount, setUnreadCount] = useState(0);
   const username = (session?.user as Record<string, string>)?.username || "user";
   const displayName = session?.user?.name || "User";
   const avatar = session?.user?.image;
@@ -41,6 +43,23 @@ export default function Sidebar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch("/api/notifications/count")
+      .then(r => r.json())
+      .then(d => setUnreadCount(d.count || 0))
+      .catch(() => {});
+
+    // Poll every 30 seconds
+    const interval = setInterval(() => {
+      fetch("/api/notifications/count")
+        .then(r => r.json())
+        .then(d => setUnreadCount(d.count || 0))
+        .catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [session]);
 
   const profileHref = `/profile/${username}`;
 
@@ -89,6 +108,29 @@ export default function Sidebar() {
               </Link>
             );
           })}
+
+          {/* Notifications link */}
+          <Link
+            href="/notifications"
+            className={`flex items-center gap-5 py-3 px-4 rounded-full transition-colors text-xl hover:bg-bg-tertiary xl:justify-start justify-center ${
+              pathname.startsWith("/notifications")
+                ? "font-bold text-text-primary"
+                : "text-text-primary font-normal"
+            }`}
+          >
+            <div className="relative">
+              <Bell
+                size={26}
+                strokeWidth={pathname.startsWith("/notifications") ? 2.5 : 1.75}
+              />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-accent text-[11px] font-bold text-white px-1">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </div>
+            <span className="hidden xl:inline">Notifications</span>
+          </Link>
 
           {/* Profile link */}
           <Link

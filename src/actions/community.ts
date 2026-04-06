@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
 import { slugify } from "@/lib/utils";
+import { createNotification } from "@/actions/notification";
 
 export async function createCommunity(formData: FormData) {
   const user = await requireAuth();
@@ -117,6 +118,20 @@ export async function joinCommunity(communityId: string) {
       role: "MEMBER",
     },
   });
+
+  // Notify community creator about the new member
+  const community = await prisma.community.findUnique({
+    where: { id: communityId },
+    select: { creatorId: true, slug: true, name: true },
+  });
+  if (community && community.creatorId !== user.id) {
+    await createNotification(
+      community.creatorId,
+      "member_join",
+      `${user.name || user.username} joined ${community.name}`,
+      `/communities/${community.slug}`
+    );
+  }
 
   revalidatePath("/communities");
   revalidatePath("/explore");

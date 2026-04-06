@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
-import PostFeed from "@/components/post/PostFeed";
+import InfiniteFeed from "@/components/post/InfiniteFeed";
 import { PostWithDetails } from "@/types";
 
 export default async function HomePage() {
@@ -44,7 +44,7 @@ export default async function HomePage() {
       parentId: null,
     },
     orderBy: { createdAt: "desc" },
-    take: 50,
+    take: 20,
     include: {
       author: {
         select: { id: true, name: true, username: true, avatar: true, image: true },
@@ -67,7 +67,7 @@ export default async function HomePage() {
       <div className="sticky top-0 z-10 bg-bg-primary/80 backdrop-blur-md border-b border-border-primary px-4 py-3">
         <h1 className="text-xl font-bold text-text-primary">Home</h1>
       </div>
-      <PostFeed posts={posts} currentUserId={user.id} />
+      <InfiniteFeed initialPosts={posts} currentUserId={user.id} type="home" />
     </div>
   );
 }

@@ -18,6 +18,8 @@ import RepostButton from "./RepostButton";
 interface PostCardProps {
   post: PostWithDetails;
   currentUserId?: string;
+  /** Hide the community badge (e.g. when viewing a community feed) */
+  hideCommunity?: boolean;
 }
 
 function timeAgo(date: Date): string {
@@ -37,7 +39,7 @@ function timeAgo(date: Date): string {
   });
 }
 
-export default function PostCard({ post, currentUserId }: PostCardProps) {
+export default function PostCard({ post, currentUserId, hideCommunity = false }: PostCardProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -184,6 +186,22 @@ export default function PostCard({ post, currentUserId }: PostCardProps) {
               </div>
             )}
           </div>
+
+          {/* Community badge */}
+          {!hideCommunity && post.community?.name && (
+            <div className="text-[13px] text-text-secondary mt-0.5">
+              in{" "}
+              <span
+                onClick={(e) => {
+                  e.stopPropagation();
+                  router.push(`/communities/${post.community.slug}`);
+                }}
+                className="text-accent hover:underline cursor-pointer"
+              >
+                {post.community.name}
+              </span>
+            </div>
+          )}
 
           {/* Post content */}
           {displayPost.content && (

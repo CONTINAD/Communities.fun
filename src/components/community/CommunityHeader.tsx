@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, Settings } from "lucide-react";
+import { Users, Settings, Share } from "lucide-react";
 import JoinButton from "./JoinButton";
 import SocialLinks from "./SocialLinks";
 
@@ -94,6 +94,26 @@ export default function CommunityHeader({
 
           {/* Join/Leave button + Settings */}
           <div className="mt-3 flex items-center gap-2">
+            {/* Share to X */}
+            <button
+              onClick={() => {
+                const text = encodeURIComponent(
+                  `Check out ${community.name} on Communities.fun!`
+                );
+                const url = encodeURIComponent(
+                  `https://communitiesfun.netlify.app/communities/${community.slug}`
+                );
+                window.open(
+                  `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
+                  "_blank",
+                  "noopener,noreferrer"
+                );
+              }}
+              className="flex items-center justify-center rounded-full border border-border-primary p-2 text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-text-primary"
+              title="Share to X"
+            >
+              <Share size={18} />
+            </button>
             {isAdmin && (
               <Link
                 href={`/communities/${community.slug}/settings`}

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Home, Compass, Users, User } from "lucide-react";
+import { Home, Compass, Users, Bell, User } from "lucide-react";
 
 export default function MobileNav() {
   const pathname = usePathname();
@@ -15,6 +15,7 @@ export default function MobileNav() {
     { href: "/home", icon: Home, label: "Home" },
     { href: "/explore", icon: Compass, label: "Explore" },
     { href: "/communities", icon: Users, label: "Communities" },
+    { href: "/notifications", icon: Bell, label: "Notifications" },
     { href: `/profile/${username}`, icon: User, label: "Profile" },
   ];
 

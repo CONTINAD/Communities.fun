@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
+import { createNotification } from "@/actions/notification";
 
 export async function createPost(formData: FormData) {
   const user = await requireAuth();
@@ -89,6 +90,20 @@ export async function likePost(postId: string) {
     await prisma.like.create({
       data: { userId: user.id, postId },
     });
+
+    // Notify post author about the like
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      include: { community: { select: { slug: true } } },
+    });
+    if (post && post.authorId !== user.id) {
+      await createNotification(
+        post.authorId,
+        "like",
+        `${user.name || user.username} liked your post`,
+        `/post/${postId}`
+      );
+    }
   }
 
   revalidatePath("/");
@@ -129,6 +144,16 @@ export async function createReply(formData: FormData) {
     },
   });
 
+  // Notify parent post author about the reply
+  if (parent.authorId !== user.id) {
+    await createNotification(
+      parent.authorId,
+      "reply",
+      `${user.name || user.username} replied to your post`,
+      `/post/${parentId}`
+    );
+  }
+
   revalidatePath(`/post/${parentId}`);
   revalidatePath(`/communities/${parent.community.slug}`);
   return { success: true };
@@ -163,6 +188,19 @@ export async function repost(postId: string, communityId: string) {
       repostOfId: postId,
     },
   });
+
+  // Notify original post author about the repost
+  const originalPost = await prisma.post.findUnique({
+    where: { id: postId },
+  });
+  if (originalPost && originalPost.authorId !== user.id) {
+    await createNotification(
+      originalPost.authorId,
+      "repost",
+      `${user.name || user.username} reposted your post`,
+      `/post/${postId}`
+    );
+  }
 
   revalidatePath("/");
   return { success: true, reposted: true };

@@ -23,6 +23,7 @@ export default function PostComposer({
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
+  const [shareToX, setShareToX] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -93,9 +94,20 @@ export default function PostComposer({
     try {
       const result = await createPost(formData);
       if (result.success) {
+        if (shareToX && result.postId) {
+          const postUrl = `https://communitiesfun.netlify.app/post/${result.postId}`;
+          const tweetText = encodeURIComponent(content.trim());
+          const tweetUrl = encodeURIComponent(postUrl);
+          window.open(
+            `https://twitter.com/intent/tweet?text=${tweetText}&url=${tweetUrl}`,
+            "_blank",
+            "noopener,noreferrer"
+          );
+        }
         setContent("");
         setImagePreview(null);
         setImageUrl(null);
+        setShareToX(false);
         if (textareaRef.current) {
           textareaRef.current.style.height = "auto";
         }
@@ -188,6 +200,28 @@ export default function PostComposer({
             </div>
 
             <div className="flex items-center gap-3">
+              <label className="flex items-center gap-1.5 cursor-pointer select-none group">
+                <input
+                  type="checkbox"
+                  checked={shareToX}
+                  onChange={(e) => setShareToX(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-4 h-4 rounded border border-border-primary bg-bg-secondary flex items-center justify-center peer-checked:bg-accent peer-checked:border-accent transition-colors">
+                  {shareToX && (
+                    <svg viewBox="0 0 16 16" className="w-3 h-3 text-white fill-current">
+                      <path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z" />
+                    </svg>
+                  )}
+                </div>
+                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-text-secondary group-hover:text-text-primary transition-colors fill-current">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                </svg>
+                <span className="text-[13px] text-text-secondary group-hover:text-text-primary transition-colors">
+                  Post on X
+                </span>
+              </label>
+
               {content.length > 0 && (
                 <span
                   className={`text-sm ${

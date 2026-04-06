@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import CommunityHeader from "@/components/community/CommunityHeader";
 import PostComposer from "@/components/post/PostComposer";
-import PostFeed from "@/components/post/PostFeed";
+import InfiniteFeed from "@/components/post/InfiniteFeed";
 import { PostWithDetails } from "@/types";
 
 interface CommunityPageProps {
@@ -80,7 +80,7 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
         />
       )}
 
-      <PostFeed posts={posts} currentUserId={currentUser?.id} />
+      <InfiniteFeed initialPosts={posts} currentUserId={currentUser?.id} type="community" communityId={community.id} />
     </div>
   );
 }
