@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, Users, Pin } from "lucide-react";
+import { Calendar, Users } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { formatCount } from "@/lib/utils";
@@ -114,19 +114,6 @@ export default function ProfileHeader({
             </span>
           </div>
         </div>
-
-        {/* Pinned tweet */}
-        {user.pinnedTweet && (
-          <div className="mx-4 mb-4 rounded-xl border border-border-primary bg-bg-secondary p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Pin size={14} className="text-text-secondary" />
-              <span className="text-[13px] font-medium text-text-secondary">Pinned from X</span>
-            </div>
-            <p className="text-[15px] text-text-primary whitespace-pre-wrap leading-relaxed">
-              {user.pinnedTweet}
-            </p>
-          </div>
-        )}
 
         {/* Bottom border */}
         <div className="border-b border-border-primary" />
