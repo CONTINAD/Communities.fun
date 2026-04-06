@@ -75,11 +75,15 @@ export async function GET(request: NextRequest) {
       dexPaid: !!(pair.info?.imageUrl || pair.info?.header),
     };
 
-    // Extract social links
-    if (pair.info?.websites?.length) {
-      result.website = pair.info.websites[0].url;
+    // Extract social links from info
+    if (pair.info?.websites) {
+      for (const w of pair.info.websites) {
+        if (w.url && !result.website) {
+          result.website = w.url;
+        }
+      }
     }
-    if (pair.info?.socials?.length) {
+    if (pair.info?.socials) {
       for (const social of pair.info.socials) {
         if (social.type === "twitter" && !result.twitter) {
           result.twitter = social.url;
@@ -87,11 +91,15 @@ export async function GET(request: NextRequest) {
         if (social.type === "telegram" && !result.telegram) {
           result.telegram = social.url;
         }
+        // Some have website as a social
+        if (social.type === "website" && !result.website) {
+          result.website = social.url;
+        }
       }
     }
 
     // Also check boost links
-    if (boostData?.links?.length) {
+    if (boostData?.links) {
       for (const link of boostData.links) {
         if (link.type === "twitter" && !result.twitter) {
           result.twitter = link.url;
@@ -99,8 +107,35 @@ export async function GET(request: NextRequest) {
         if (link.type === "telegram" && !result.telegram) {
           result.telegram = link.url;
         }
-        if (!link.type && !result.website) {
+        if (link.type === "website" && !result.website) {
           result.website = link.url;
+        }
+        // Links without a type are often websites
+        if (!link.type && link.url && !result.website) {
+          result.website = link.url;
+        }
+      }
+    }
+
+    // Check all pairs for info if first pair didn't have it
+    if (Array.isArray(tokenData) && (!result.website || !result.twitter || !result.imageUrl)) {
+      for (const p of tokenData) {
+        if (p.info?.websites && !result.website) {
+          result.website = p.info.websites[0]?.url || null;
+        }
+        if (p.info?.socials && !result.twitter) {
+          const tw = p.info.socials.find((s: Record<string, string>) => s.type === "twitter");
+          if (tw) result.twitter = tw.url;
+        }
+        if (p.info?.socials && !result.telegram) {
+          const tg = p.info.socials.find((s: Record<string, string>) => s.type === "telegram");
+          if (tg) result.telegram = tg.url;
+        }
+        if (p.info?.imageUrl && !result.imageUrl) {
+          result.imageUrl = p.info.imageUrl;
+        }
+        if (p.info?.header && !result.headerUrl) {
+          result.headerUrl = p.info.header;
         }
       }
     }
