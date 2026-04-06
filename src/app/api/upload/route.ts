@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile } from "fs/promises";
-import { join } from "path";
-import { randomUUID } from "crypto";
 
 const ALLOWED_TYPES = [
   "image/jpeg",
@@ -34,17 +31,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Convert to base64 data URL — works on serverless (no filesystem writes)
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const base64 = buffer.toString("base64");
+    const dataUrl = `data:${file.type};base64,${base64}`;
 
-    const ext = file.name.split(".").pop() || "jpg";
-    const filename = `${randomUUID()}.${ext}`;
-    const uploadDir = join(process.cwd(), "public", "uploads");
-    const filepath = join(uploadDir, filename);
-
-    await writeFile(filepath, buffer);
-
-    return NextResponse.json({ url: `/uploads/${filename}` });
+    return NextResponse.json({ url: dataUrl });
   } catch {
     return NextResponse.json(
       { error: "Upload failed" },

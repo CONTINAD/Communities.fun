@@ -39,6 +39,8 @@ export default function CommunitySettingsForm({
   const [telegram, setTelegram] = useState(community.telegram || "");
   const [website, setWebsite] = useState(community.website || "");
   const [dexscreener, setDexscreener] = useState(community.dexscreener || "");
+  const [dexAvatar, setDexAvatar] = useState("");
+  const [dexCover, setDexCover] = useState("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -74,15 +76,8 @@ export default function CommunitySettingsForm({
     if (data.telegram) setTelegram(data.telegram);
     if (data.website) setWebsite(data.website);
     if (data.dexscreener) setDexscreener(data.dexscreener);
-
-    if (data.avatar && formRef.current) {
-      const input = formRef.current.querySelector('input[name="avatar"]') as HTMLInputElement;
-      if (input) input.value = data.avatar;
-    }
-    if (data.coverImage && formRef.current) {
-      const input = formRef.current.querySelector('input[name="coverImage"]') as HTMLInputElement;
-      if (input) input.value = data.coverImage;
-    }
+    if (data.avatar) setDexAvatar(data.avatar);
+    if (data.coverImage) setDexCover(data.coverImage);
   }
 
   return (
@@ -169,10 +164,33 @@ export default function CommunitySettingsForm({
       </div>
 
       {/* Images */}
-      <div className="flex gap-6">
-        <ImageUpload name="avatar" label="Avatar" shape="circle" currentImage={community.avatar} />
-        <ImageUpload name="coverImage" label="Cover Image" shape="banner" currentImage={community.coverImage} className="flex-1" />
-      </div>
+      {(dexAvatar || dexCover) && (
+        <div className="rounded-lg border border-border-primary bg-bg-secondary p-3 space-y-2">
+          <p className="text-xs text-text-secondary font-medium">Images from DexScreener</p>
+          <div className="flex items-center gap-4">
+            {dexAvatar && (
+              <div className="relative">
+                <img src={dexAvatar} alt="Avatar" className="w-16 h-16 rounded-full object-cover" />
+                <button type="button" onClick={() => setDexAvatar("")} className="absolute -top-1 -right-1 bg-bg-primary rounded-full p-0.5 text-text-secondary hover:text-danger"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+              </div>
+            )}
+            {dexCover && (
+              <div className="relative flex-1">
+                <img src={dexCover} alt="Cover" className="w-full h-16 rounded-lg object-cover" />
+                <button type="button" onClick={() => setDexCover("")} className="absolute -top-1 -right-1 bg-bg-primary rounded-full p-0.5 text-text-secondary hover:text-danger"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+              </div>
+            )}
+          </div>
+          <input type="hidden" name="avatar" value={dexAvatar} />
+          <input type="hidden" name="coverImage" value={dexCover} />
+        </div>
+      )}
+      {!dexAvatar && !dexCover && (
+        <div className="flex gap-6">
+          <ImageUpload name="avatar" label="Avatar" shape="circle" currentImage={community.avatar} />
+          <ImageUpload name="coverImage" label="Cover Image" shape="banner" currentImage={community.coverImage} className="flex-1" />
+        </div>
+      )}
 
       {/* Submit */}
       <button type="submit" disabled={isPending} className="rounded-full bg-accent px-6 py-2.5 text-[15px] font-bold text-white transition-colors hover:bg-accent-hover disabled:opacity-60 disabled:cursor-not-allowed">

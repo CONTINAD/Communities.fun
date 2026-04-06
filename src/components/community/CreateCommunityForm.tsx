@@ -21,6 +21,8 @@ export default function CreateCommunityForm() {
   const [telegram, setTelegram] = useState("");
   const [website, setWebsite] = useState("");
   const [dexscreener, setDexscreener] = useState("");
+  const [dexAvatar, setDexAvatar] = useState("");
+  const [dexCover, setDexCover] = useState("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -54,16 +56,8 @@ export default function CreateCommunityForm() {
     if (data.telegram) setTelegram(data.telegram);
     if (data.website) setWebsite(data.website);
     if (data.dexscreener) setDexscreener(data.dexscreener);
-
-    // Set avatar/cover via hidden inputs (ImageUpload uses hidden inputs)
-    if (data.avatar && formRef.current) {
-      const avatarInput = formRef.current.querySelector('input[name="avatar"]') as HTMLInputElement;
-      if (avatarInput) avatarInput.value = data.avatar;
-    }
-    if (data.coverImage && formRef.current) {
-      const coverInput = formRef.current.querySelector('input[name="coverImage"]') as HTMLInputElement;
-      if (coverInput) coverInput.value = data.coverImage;
-    }
+    if (data.avatar) setDexAvatar(data.avatar);
+    if (data.coverImage) setDexCover(data.coverImage);
   }
 
   return (
@@ -167,10 +161,33 @@ export default function CreateCommunityForm() {
       </div>
 
       {/* Images */}
-      <div className="flex gap-6">
-        <ImageUpload name="avatar" label="Avatar" shape="circle" />
-        <ImageUpload name="coverImage" label="Cover Image" shape="banner" className="flex-1" />
-      </div>
+      {(dexAvatar || dexCover) && (
+        <div className="rounded-lg border border-border-primary bg-bg-secondary p-3 space-y-2">
+          <p className="text-xs text-text-secondary font-medium">Images from DexScreener</p>
+          <div className="flex items-center gap-4">
+            {dexAvatar && (
+              <div className="relative">
+                <img src={dexAvatar} alt="Avatar" className="w-16 h-16 rounded-full object-cover" />
+                <button type="button" onClick={() => setDexAvatar("")} className="absolute -top-1 -right-1 bg-bg-primary rounded-full p-0.5 text-text-secondary hover:text-danger"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+              </div>
+            )}
+            {dexCover && (
+              <div className="relative flex-1">
+                <img src={dexCover} alt="Cover" className="w-full h-16 rounded-lg object-cover" />
+                <button type="button" onClick={() => setDexCover("")} className="absolute -top-1 -right-1 bg-bg-primary rounded-full p-0.5 text-text-secondary hover:text-danger"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+              </div>
+            )}
+          </div>
+          <input type="hidden" name="avatar" value={dexAvatar} />
+          <input type="hidden" name="coverImage" value={dexCover} />
+        </div>
+      )}
+      {!dexAvatar && !dexCover && (
+        <div className="flex gap-6">
+          <ImageUpload name="avatar" label="Avatar" shape="circle" />
+          <ImageUpload name="coverImage" label="Cover Image" shape="banner" className="flex-1" />
+        </div>
+      )}
 
       {/* Submit */}
       <button

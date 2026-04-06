@@ -77,7 +77,6 @@ export const authOptions: NextAuthOptions = {
           });
           if (!dbUser) return true;
 
-          // Build update data
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const updateData: Record<string, any> = {};
           const xUser = user as unknown as Record<string, unknown>;
@@ -93,19 +92,18 @@ export const authOptions: NextAuthOptions = {
             updateData.username = username;
           }
 
-          // Always sync avatar from X profile image
+          // Always sync avatar, name, bio from X on every sign-in
           if (user.image) {
             updateData.avatar = user.image;
+            updateData.image = user.image;
           }
 
-          // Set bio from X if user has no bio
-          if (!dbUser.bio && xUser.description) {
-            updateData.bio = xUser.description as string;
-          }
-
-          // Set name if missing
-          if (!dbUser.name && user.name) {
+          if (user.name) {
             updateData.name = user.name;
+          }
+
+          if (xUser.description) {
+            updateData.bio = xUser.description as string;
           }
 
           if (Object.keys(updateData).length > 0) {
