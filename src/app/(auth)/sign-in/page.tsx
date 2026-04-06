@@ -1,8 +1,8 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 function XIcon() {
@@ -15,9 +15,23 @@ function XIcon() {
 
 export default function SignInPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [xLoading, setXLoading] = useState(false);
+
+  useEffect(() => {
+    const urlError = searchParams.get("error");
+    if (urlError) {
+      const messages: Record<string, string> = {
+        OAuthCallback: "X sign-in failed — check callback URL config.",
+        OAuthSignin: "Could not connect to X — try again.",
+        OAuthAccountNotLinked: "This X account is linked to another user.",
+        Callback: "Sign-in callback error.",
+      };
+      setError(messages[urlError] || `Auth error: ${urlError}`);
+    }
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
