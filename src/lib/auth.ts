@@ -63,7 +63,9 @@ export const authOptions: NextAuthOptions = {
           where: { id: user.id },
         });
 
-        if (dbUser && !dbUser.username) {
+        // Check if username is the auto-generated cuid default (needs real username)
+        const needsUsername = dbUser && (!dbUser.username || dbUser.username.length === 25);
+        if (needsUsername) {
           // Pull username from Twitter profile
           const twitterUsername =
             (profile as Record<string, unknown>)?.data
@@ -84,7 +86,7 @@ export const authOptions: NextAuthOptions = {
             data: {
               username,
               name: user.name || username,
-              avatar: user.image || undefined,
+              avatar: user.image?.replace("_normal", "") || undefined,
               bio: (profile as Record<string, unknown>)?.description as string || undefined,
             },
           });
@@ -93,7 +95,7 @@ export const authOptions: NextAuthOptions = {
           if (!dbUser.avatar && user.image) {
             await prisma.user.update({
               where: { id: user.id },
-              data: { avatar: user.image },
+              data: { avatar: user.image?.replace("_normal", "") },
             });
           }
         }
