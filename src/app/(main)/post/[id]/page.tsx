@@ -19,7 +19,7 @@ export default async function PostPage({ params }: PostPageProps) {
     where: { id: params.id },
     include: {
       author: {
-        select: { id: true, name: true, username: true, avatar: true },
+        select: { id: true, name: true, username: true, avatar: true, image: true },
       },
       community: {
         select: { id: true, name: true, slug: true },
@@ -43,7 +43,7 @@ export default async function PostPage({ params }: PostPageProps) {
     orderBy: { createdAt: "asc" },
     include: {
       author: {
-        select: { id: true, name: true, username: true, avatar: true },
+        select: { id: true, name: true, username: true, avatar: true, image: true },
       },
       community: {
         select: { id: true, name: true, slug: true },

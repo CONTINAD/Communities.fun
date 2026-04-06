@@ -13,6 +13,19 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.TWITTER_CLIENT_ID ?? "",
       clientSecret: process.env.TWITTER_CLIENT_SECRET ?? "",
       version: "2.0",
+      profile(profile) {
+        // Twitter v2 profile has data nested under .data
+        const data = profile.data;
+        return {
+          id: data.id,
+          name: data.name,
+          email: null,
+          image: data.profile_image_url?.replace("_normal", "") ?? null,
+          // Custom fields we pass through
+          username: data.username,
+          description: data.description,
+        };
+      },
     }),
     CredentialsProvider({
       name: "credentials",
@@ -47,7 +60,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           username: user.username,
-          image: user.avatar,
+          image: user.avatar || user.image,
         };
       },
     }),
@@ -56,48 +69,53 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
-      // For OAuth sign-ins, ensure user has a username
+    async signIn({ user, account }) {
       if (account?.provider === "twitter" && user.id) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: user.id },
-        });
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: user.id },
+          });
+          if (!dbUser) return true;
 
-        // Check if username is the auto-generated cuid default (needs real username)
-        const needsUsername = dbUser && (!dbUser.username || dbUser.username.length === 25);
-        if (needsUsername) {
-          // Pull username from Twitter profile
-          const twitterUsername =
-            (profile as Record<string, unknown>)?.data
-              ? ((profile as Record<string, unknown>).data as Record<string, string>)?.username
-              : (profile as Record<string, string>)?.screen_name;
+          // Build update data
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const updateData: Record<string, any> = {};
+          const xUser = user as Record<string, unknown>;
 
-          let username = twitterUsername || `user_${user.id.slice(0, 8)}`;
-
-          // Make sure username is unique
-          const existing = await prisma.user.findUnique({ where: { username } });
-          if (existing && existing.id !== dbUser.id) {
-            username = `${username}_${Date.now().toString(36).slice(-4)}`;
+          // Set username from X handle if current username is auto-generated cuid
+          const isDefaultUsername = /^c[a-z0-9]{24}$/.test(dbUser.username);
+          if (isDefaultUsername && xUser.username) {
+            let username = xUser.username as string;
+            const existing = await prisma.user.findUnique({ where: { username } });
+            if (existing && existing.id !== dbUser.id) {
+              username = `${username}_${Date.now().toString(36).slice(-4)}`;
+            }
+            updateData.username = username;
           }
 
-          // Update user with Twitter profile data
-          await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              username,
-              name: user.name || username,
-              avatar: user.image?.replace("_normal", "") || undefined,
-              bio: (profile as Record<string, unknown>)?.description as string || undefined,
-            },
-          });
-        } else if (dbUser) {
-          // Existing user — update avatar from X if they don't have one
-          if (!dbUser.avatar && user.image) {
+          // Always sync avatar from X profile image
+          if (user.image) {
+            updateData.avatar = user.image;
+          }
+
+          // Set bio from X if user has no bio
+          if (!dbUser.bio && xUser.description) {
+            updateData.bio = xUser.description as string;
+          }
+
+          // Set name if missing
+          if (!dbUser.name && user.name) {
+            updateData.name = user.name;
+          }
+
+          if (Object.keys(updateData).length > 0) {
             await prisma.user.update({
               where: { id: user.id },
-              data: { avatar: user.image?.replace("_normal", "") },
+              data: updateData,
             });
           }
+        } catch (e) {
+          console.error("Error updating user from Twitter:", e);
         }
       }
       return true;
@@ -105,14 +123,12 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
-        // Fetch username from DB since OAuth user object doesn't have it
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
           select: { username: true },
         });
         token.username = dbUser?.username || (user as unknown as Record<string, string>).username;
       }
-      // Handle session updates (e.g. after linking)
       if (trigger === "update" && session) {
         token.username = (session as Record<string, string>).username || token.username;
       }
@@ -128,23 +144,5 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/sign-in",
-  },
-  events: {
-    async createUser({ user }) {
-      // When a new user is created via OAuth, ensure they have a username
-      const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
-      if (dbUser && !dbUser.username) {
-        const baseUsername = user.name?.toLowerCase().replace(/[^a-z0-9_]/g, "") || "user";
-        let username = baseUsername || `user_${user.id.slice(0, 8)}`;
-        const existing = await prisma.user.findUnique({ where: { username } });
-        if (existing) {
-          username = `${username}_${Date.now().toString(36).slice(-4)}`;
-        }
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { username },
-        });
-      }
-    },
   },
 };

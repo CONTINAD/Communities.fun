@@ -1,7 +1,7 @@
 import { User, Community, Post, Like, CommunityMember } from "@prisma/client";
 
 export type PostWithDetails = Post & {
-  author: Pick<User, "id" | "name" | "username" | "avatar">;
+  author: Pick<User, "id" | "name" | "username" | "avatar" | "image">;
   community: Pick<Community, "id" | "name" | "slug">;
   _count: {
     likes: number;
@@ -10,7 +10,7 @@ export type PostWithDetails = Post & {
   };
   likes: Pick<Like, "userId">[];
   repostOf?: (Post & {
-    author: Pick<User, "id" | "name" | "username" | "avatar">;
+    author: Pick<User, "id" | "name" | "username" | "avatar" | "image">;
   }) | null;
 };
 
@@ -19,9 +19,9 @@ export type CommunityWithDetails = Community & {
     members: number;
     posts: number;
   };
-  creator: Pick<User, "id" | "name" | "username" | "avatar">;
+  creator: Pick<User, "id" | "name" | "username" | "avatar" | "image">;
 };
 
 export type MemberWithUser = CommunityMember & {
-  user: Pick<User, "id" | "name" | "username" | "avatar" | "bio">;
+  user: Pick<User, "id" | "name" | "username" | "avatar" | "image" | "bio">;
 };

@@ -47,7 +47,7 @@ export default async function HomePage() {
     take: 50,
     include: {
       author: {
-        select: { id: true, name: true, username: true, avatar: true },
+        select: { id: true, name: true, username: true, avatar: true, image: true },
       },
       community: {
         select: { id: true, name: true, slug: true },

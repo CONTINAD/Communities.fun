@@ -14,7 +14,7 @@ export default async function CommunityAboutPage({
     where: { slug: params.slug },
     include: {
       creator: {
-        select: { id: true, name: true, username: true, avatar: true },
+        select: { id: true, name: true, username: true, avatar: true, image: true },
       },
       rules: {
         orderBy: { order: "asc" },

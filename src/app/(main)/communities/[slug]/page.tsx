@@ -15,7 +15,7 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
     where: { slug: params.slug },
     include: {
       creator: {
-        select: { id: true, name: true, username: true, avatar: true },
+        select: { id: true, name: true, username: true, avatar: true, image: true },
       },
       _count: {
         select: { members: true, posts: true },
@@ -53,7 +53,7 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
     orderBy: { createdAt: "desc" },
     include: {
       author: {
-        select: { id: true, name: true, username: true, avatar: true },
+        select: { id: true, name: true, username: true, avatar: true, image: true },
       },
       community: {
         select: { id: true, name: true, slug: true },

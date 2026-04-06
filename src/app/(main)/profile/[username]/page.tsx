@@ -18,6 +18,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       username: true,
       bio: true,
       avatar: true,
+      image: true,
       coverImage: true,
       createdAt: true,
     },
@@ -40,7 +41,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     orderBy: { createdAt: "desc" },
     include: {
       author: {
-        select: { id: true, name: true, username: true, avatar: true },
+        select: { id: true, name: true, username: true, avatar: true, image: true },
       },
       community: {
         select: { id: true, name: true, slug: true },
@@ -71,6 +72,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       <ProfileHeader
         user={{
           ...profileUser,
+          avatar: profileUser.avatar || profileUser.image,
           joinDate: profileUser.createdAt,
         }}
         postCount={postCount}

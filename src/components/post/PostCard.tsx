@@ -49,6 +49,7 @@ export default function PostCard({ post, currentUserId }: PostCardProps) {
     ? post.repostOf.author
     : post.author;
 
+  const authorAvatar = authorAvatar || displayAuthor.image;
   const isAuthor = currentUserId === post.authorId;
   const isLiked = post.likes.some((like) => like.userId === currentUserId);
 
@@ -117,9 +118,9 @@ export default function PostCard({ post, currentUserId }: PostCardProps) {
             }}
             className="w-10 h-10 rounded-full overflow-hidden bg-bg-tertiary cursor-pointer"
           >
-            {displayAuthor.avatar ? (
+            {authorAvatar ? (
               <Image
-                src={displayAuthor.avatar}
+                src={authorAvatar}
                 alt={displayAuthor.name || ""}
                 width={40}
                 height={40}
