@@ -5,13 +5,24 @@ import { prisma } from "./prisma";
 
 export async function getCurrentUser() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email) return null;
+  if (!session?.user) return null;
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-  });
+  // Try by ID first (works for OAuth users), fall back to email
+  const userId = (session.user as Record<string, unknown>).id as string;
 
-  return user;
+  if (userId) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (user) return user;
+  }
+
+  if (session.user.email) {
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+    if (user) return user;
+  }
+
+  return null;
 }
 
 export async function requireAuth() {
