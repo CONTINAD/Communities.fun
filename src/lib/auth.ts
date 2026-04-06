@@ -5,6 +5,31 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 
+async function fetchTwitterExtras(accessToken: string) {
+  try {
+    const res = await fetch(
+      "https://api.twitter.com/2/users/me?user.fields=description,profile_banner_url,profile_image_url,pinned_tweet_id&expansions=pinned_tweet_id&tweet.fields=text",
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    const user = json.data;
+    const pinnedTweet = json.includes?.tweets?.[0]?.text || null;
+    return {
+      bio: user?.description || null,
+      banner: user?.profile_banner_url || null,
+      profileImage: user?.profile_image_url?.replace("_normal", "") || null,
+      pinnedTweet,
+      username: user?.username || null,
+      name: user?.name || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export const authOptions: NextAuthOptions = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   adapter: PrismaAdapter(prisma) as any,
@@ -14,14 +39,12 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.TWITTER_CLIENT_SECRET ?? "",
       version: "2.0",
       profile(profile) {
-        // Twitter v2 profile has data nested under .data
         const data = profile.data;
         return {
           id: data.id,
           name: data.name,
           email: null,
           image: data.profile_image_url?.replace("_normal", "") ?? null,
-          // Custom fields we pass through
           username: data.username,
           description: data.description,
         };
@@ -77,33 +100,55 @@ export const authOptions: NextAuthOptions = {
           });
           if (!dbUser) return true;
 
+          // Fetch extra profile data from Twitter API
+          const extras = account.access_token
+            ? await fetchTwitterExtras(account.access_token)
+            : null;
+
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const updateData: Record<string, any> = {};
           const xUser = user as unknown as Record<string, unknown>;
 
           // Set username from X handle if current username is auto-generated cuid
           const isDefaultUsername = /^c[a-z0-9]{24}$/.test(dbUser.username);
-          if (isDefaultUsername && xUser.username) {
-            let username = xUser.username as string;
-            const existing = await prisma.user.findUnique({ where: { username } });
-            if (existing && existing.id !== dbUser.id) {
-              username = `${username}_${Date.now().toString(36).slice(-4)}`;
+          if (isDefaultUsername) {
+            const handle = extras?.username || (xUser.username as string);
+            if (handle) {
+              let username = handle;
+              const existing = await prisma.user.findUnique({ where: { username } });
+              if (existing && existing.id !== dbUser.id) {
+                username = `${username}_${Date.now().toString(36).slice(-4)}`;
+              }
+              updateData.username = username;
             }
-            updateData.username = username;
           }
 
-          // Always sync avatar, name, bio from X on every sign-in
-          if (user.image) {
-            updateData.avatar = user.image;
-            updateData.image = user.image;
+          // Always sync from X on every sign-in
+          const profileImage = extras?.profileImage || user.image;
+          if (profileImage) {
+            updateData.avatar = profileImage;
+            updateData.image = profileImage;
           }
 
-          if (user.name) {
-            updateData.name = user.name;
+          if (extras?.name || user.name) {
+            updateData.name = extras?.name || user.name;
           }
 
-          if (xUser.description) {
+          // Bio from Twitter API (has full description)
+          if (extras?.bio) {
+            updateData.bio = extras.bio;
+          } else if (xUser.description) {
             updateData.bio = xUser.description as string;
+          }
+
+          // Banner from Twitter API
+          if (extras?.banner) {
+            updateData.coverImage = extras.banner;
+          }
+
+          // Pinned tweet
+          if (extras?.pinnedTweet) {
+            updateData.pinnedTweet = extras.pinnedTweet;
           }
 
           if (Object.keys(updateData).length > 0) {

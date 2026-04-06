@@ -20,6 +20,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       avatar: true,
       image: true,
       coverImage: true,
+      pinnedTweet: true,
       createdAt: true,
     },
   });
@@ -73,6 +74,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         user={{
           ...profileUser,
           avatar: profileUser.avatar || profileUser.image,
+          pinnedTweet: profileUser.pinnedTweet,
           joinDate: profileUser.createdAt,
         }}
         postCount={postCount}

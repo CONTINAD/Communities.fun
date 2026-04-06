@@ -18,6 +18,7 @@ model User {
   bio           String?
   avatar        String?
   coverImage    String?
+  pinnedTweet   String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
