@@ -6,8 +6,10 @@ import Image from "next/image";
 import {
   updateMemberRole,
   removeMember,
+  banMember,
+  unbanMember,
 } from "@/actions/community";
-import { X, ChevronDown, Loader2, Shield, ShieldCheck, User } from "lucide-react";
+import { X, ChevronDown, Loader2, Shield, ShieldCheck, User, Ban } from "lucide-react";
 
 interface Member {
   userId: string;
@@ -17,11 +19,19 @@ interface Member {
   role: string;
 }
 
+interface BannedUser {
+  userId: string;
+  username: string;
+  name: string | null;
+  reason: string | null;
+}
+
 interface MemberManagerProps {
   communityId: string;
   currentUserId: string;
   adminCount: number;
   initialMembers: Member[];
+  initialBanned?: BannedUser[];
 }
 
 const ROLE_OPTIONS = [
@@ -57,13 +67,16 @@ export default function MemberManager({
   currentUserId,
   adminCount: initialAdminCount,
   initialMembers,
+  initialBanned = [],
 }: MemberManagerProps) {
   const router = useRouter();
   const [members, setMembers] = useState<Member[]>(initialMembers);
+  const [banned, setBanned] = useState<BannedUser[]>(initialBanned);
   const [adminCount, setAdminCount] = useState(initialAdminCount);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [banningId, setBanningId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleRoleChange(targetUserId: string, newRole: string) {
@@ -146,6 +159,51 @@ export default function MemberManager({
     } catch {
       setError("Failed to remove member.");
       setRemovingId(null);
+    }
+  }
+
+  async function handleBan(targetUserId: string, targetName: string) {
+    if (targetUserId === currentUserId) return;
+    const confirmBan = confirm(`Ban ${targetName}? They won't be able to rejoin.`);
+    if (!confirmBan) return;
+
+    setBanningId(targetUserId);
+    setError(null);
+
+    try {
+      const result = await banMember(communityId, targetUserId, "Banned by admin");
+      if ("error" in result && result.error) {
+        setError(result.error);
+        setBanningId(null);
+        return;
+      }
+
+      const member = members.find((m) => m.userId === targetUserId);
+      if (member) {
+        setBanned((prev) => [...prev, { userId: member.userId, username: member.username, name: member.name, reason: "Banned by admin" }]);
+        if (member.role === "ADMIN") setAdminCount((prev) => prev - 1);
+      }
+      setMembers((prev) => prev.filter((m) => m.userId !== targetUserId));
+      setBanningId(null);
+      router.refresh();
+    } catch {
+      setError("Failed to ban member.");
+      setBanningId(null);
+    }
+  }
+
+  async function handleUnban(targetUserId: string) {
+    setError(null);
+    try {
+      const result = await unbanMember(communityId, targetUserId);
+      if ("error" in result && result.error) {
+        setError(result.error);
+        return;
+      }
+      setBanned((prev) => prev.filter((b) => b.userId !== targetUserId));
+      router.refresh();
+    } catch {
+      setError("Failed to unban.");
     }
   }
 
@@ -280,24 +338,33 @@ export default function MemberManager({
                     )}
                   </div>
 
-                  {/* Remove button */}
+                  {/* Kick button */}
                   <button
                     type="button"
                     onClick={() => handleRemove(member.userId)}
-                    disabled={
-                      removingId === member.userId || isLastAdmin
-                    }
-                    title={
-                      isLastAdmin
-                        ? "Cannot remove the last admin"
-                        : "Remove member"
-                    }
-                    className="rounded-full p-1.5 text-text-secondary transition-colors hover:bg-danger/10 hover:text-danger disabled:opacity-30 disabled:cursor-not-allowed"
+                    disabled={removingId === member.userId || isLastAdmin}
+                    title="Kick"
+                    className="rounded-full p-1.5 text-text-secondary transition-colors hover:bg-yellow-500/10 hover:text-yellow-500 disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     {removingId === member.userId ? (
                       <Loader2 size={16} className="animate-spin" />
                     ) : (
                       <X size={16} />
+                    )}
+                  </button>
+
+                  {/* Ban button */}
+                  <button
+                    type="button"
+                    onClick={() => handleBan(member.userId, member.name || member.username)}
+                    disabled={banningId === member.userId || isLastAdmin}
+                    title="Ban"
+                    className="rounded-full p-1.5 text-text-secondary transition-colors hover:bg-danger/10 hover:text-danger disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    {banningId === member.userId ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Ban size={16} />
                     )}
                   </button>
                 </div>
@@ -306,6 +373,38 @@ export default function MemberManager({
           );
         })}
       </div>
+
+      {/* Banned Users */}
+      {banned.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-sm font-bold text-danger mb-2 flex items-center gap-1.5">
+            <Ban size={14} />
+            Banned ({banned.length})
+          </h3>
+          <div className="divide-y divide-border-primary rounded-lg border border-danger/20">
+            {banned.map((b) => (
+              <div key={b.userId} className="flex items-center justify-between px-4 py-3">
+                <div className="min-w-0">
+                  <span className="text-[15px] font-medium text-text-primary">
+                    {b.name || b.username}
+                  </span>
+                  <span className="text-[13px] text-text-secondary ml-2">@{b.username}</span>
+                  {b.reason && (
+                    <p className="text-[12px] text-text-secondary mt-0.5">{b.reason}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleUnban(b.userId)}
+                  className="text-xs font-medium text-accent hover:underline"
+                >
+                  Unban
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

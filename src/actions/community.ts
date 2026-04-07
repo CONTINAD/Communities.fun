@@ -111,6 +111,14 @@ export async function joinCommunity(communityId: string) {
     return { error: "Already a member" };
   }
 
+  // Check if user is banned
+  const ban = await prisma.communityBan.findUnique({
+    where: { userId_communityId: { userId: user.id, communityId } },
+  });
+  if (ban) {
+    return { error: "You are banned from this community" };
+  }
+
   await prisma.communityMember.create({
     data: {
       userId: user.id,
@@ -250,8 +258,70 @@ export async function removeMember(communityId: string, targetUserId: string) {
     return { error: "Insufficient permissions" };
   }
 
+  // Mods can't kick admins or other mods
+  const target = await prisma.communityMember.findUnique({
+    where: { userId_communityId: { userId: targetUserId, communityId } },
+  });
+  if (target && member.role === "MODERATOR" && target.role !== "MEMBER") {
+    return { error: "Moderators can only kick members" };
+  }
+
   await prisma.communityMember.delete({
     where: { userId_communityId: { userId: targetUserId, communityId } },
+  });
+
+  revalidatePath(`/communities`);
+  return { success: true };
+}
+
+export async function banMember(
+  communityId: string,
+  targetUserId: string,
+  reason?: string
+) {
+  const user = await requireAuth();
+
+  const member = await prisma.communityMember.findUnique({
+    where: { userId_communityId: { userId: user.id, communityId } },
+  });
+
+  if (!member || member.role !== "ADMIN") {
+    return { error: "Only admins can ban members" };
+  }
+
+  if (targetUserId === user.id) {
+    return { error: "Cannot ban yourself" };
+  }
+
+  // Remove membership
+  await prisma.communityMember.deleteMany({
+    where: { userId: targetUserId, communityId },
+  });
+
+  // Create ban record
+  await prisma.communityBan.upsert({
+    where: { userId_communityId: { userId: targetUserId, communityId } },
+    update: { reason, bannedBy: user.id },
+    create: { userId: targetUserId, communityId, reason, bannedBy: user.id },
+  });
+
+  revalidatePath(`/communities`);
+  return { success: true };
+}
+
+export async function unbanMember(communityId: string, targetUserId: string) {
+  const user = await requireAuth();
+
+  const member = await prisma.communityMember.findUnique({
+    where: { userId_communityId: { userId: user.id, communityId } },
+  });
+
+  if (!member || member.role !== "ADMIN") {
+    return { error: "Only admins can unban members" };
+  }
+
+  await prisma.communityBan.deleteMany({
+    where: { userId: targetUserId, communityId },
   });
 
   revalidatePath(`/communities`);

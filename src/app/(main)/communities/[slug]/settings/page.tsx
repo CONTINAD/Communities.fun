@@ -35,6 +35,7 @@ export default async function CommunitySettingsPage({ params }: Props) {
           },
         },
       },
+      bans: true,
     },
   });
 
@@ -44,6 +45,25 @@ export default async function CommunitySettingsPage({ params }: Props) {
   if (!currentMember || currentMember.role !== "ADMIN") {
     redirect(`/communities/${slug}`);
   }
+
+  // Fetch banned users' info
+  const bannedUserIds = community.bans.map((b) => b.userId);
+  const bannedUsers = bannedUserIds.length > 0
+    ? await prisma.user.findMany({
+        where: { id: { in: bannedUserIds } },
+        select: { id: true, name: true, username: true },
+      })
+    : [];
+
+  const bannedList = community.bans.map((b) => {
+    const u = bannedUsers.find((u) => u.id === b.userId);
+    return {
+      userId: b.userId,
+      username: u?.username || "unknown",
+      name: u?.name || null,
+      reason: b.reason,
+    };
+  });
 
   const adminCount = community.members.filter(
     (m) => m.role === "ADMIN"
@@ -112,6 +132,7 @@ export default async function CommunitySettingsPage({ params }: Props) {
             avatar: m.user.avatar,
             role: m.role,
           }))}
+          initialBanned={bannedList}
         />
       </section>
 
